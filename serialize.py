@@ -6,6 +6,8 @@ from enum import Enum, auto
 class command(Enum):
     SET = 1
     GET = 2
+    ECHO = 3
+    PING = 4
     UNKNOWN = auto()
 
     @classmethod
@@ -15,6 +17,10 @@ class command(Enum):
             return cls.SET
         elif cmd == "get":
             return cls.GET
+        elif cmd == "echo":
+            return cls.ECHO
+        elif cmd == "ping":
+            return cls.PING
         else:
             return cls.UNKNOWN
 
@@ -33,9 +39,8 @@ class Command:
     le: int
     gt: int
     lt: int
-    key: Optional[str]
-    value: Optional[str]
 
+    # WARN: please setup this accordingly
     def __init__(self, token: Token):
         self.argc = token.argc
         self.argv = token.argv
@@ -60,3 +65,11 @@ class Command:
                         index += 1
                     except:
                         raise Exception("Invalid command")
+            case command.GET:
+                self.key = self.argv[index]
+            case command.ECHO:
+                self.value = self.argv[index]
+            case command.PING:
+                pass
+            case _:
+                raise Exception("Invalid command")
