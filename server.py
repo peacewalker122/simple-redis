@@ -1,9 +1,15 @@
 import socket
+import logging
+from typing import List
 
 from redistoken import tokenize
 from serialize import Command
 from processor import Processor
 from deserialize import deserialize
+
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 
 
 class Server:
@@ -17,13 +23,15 @@ class Server:
         self.processor = Processor()
 
     def run(self):
-        print(f"Starting server on {self.host}:{self.port}")
+        logging.warning(f"Starting server on {self.host}:{self.port}")
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.host, self.port))
             s.listen()
             while True:
                 conn, addr = s.accept()
+
+                logging.info(f"Connection from {addr[0]}:{addr[1]}")
                 with conn:
                     while True:
                         try:
@@ -33,6 +41,8 @@ class Server:
                                 data = conn.recv(1024).decode()
                                 if not data:
                                     break
+
+                                logging.info(f"recv: {data}")
 
                                 if not argc:
                                     argc = self._get_argc(data) * 2
@@ -45,13 +55,7 @@ class Server:
                                     buffer = ""
                                     argc = 0
                         except Exception as e:
-                            print(f"Error: {e}")
-                            if conn:
-                                conn.sendall(
-                                    deserialize(
-                                        [str("Invalid command")], argc=1, is_error=True
-                                    ).encode()
-                                )
+                            logging.error(e, exc_info=True)
                             break
                         finally:
                             conn.close()
@@ -69,14 +73,17 @@ class Server:
 
     def _process(self, arg: str) -> str:
         try:
-            print(f"Arg: {arg}")
+            logging.debug(f"arg: {arg}")
             token = tokenize(arg)
             cmd = Command(token)
 
-            print(f"Command: {cmd.cmd}")
+            logging.debug(f"cmd: {cmd.cmd}")
 
             result = self.processor.process(cmd)
 
-            return deserialize([result], argc=1)
+            return deserialize(
+                [result] if not isinstance(result, List) else result,
+                argc=1 if not isinstance(result, List) else len(result),
+            )
         except Exception as e:
             return deserialize([str(e)], argc=1, is_error=True)

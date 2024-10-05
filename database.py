@@ -1,5 +1,8 @@
 import heapq
+import logging
 import time
+
+log = logging.getLogger(__name__)
 
 
 class ExpiringHashMap:
@@ -13,9 +16,13 @@ class ExpiringHashMap:
         """
         expiry_time = time.time() + ttl
 
-        print(f"Setting key: {key} with expiry time: {expiry_time}")
+        log.debug(
+            f"set: {key}, {value}, {ttl}, {expiry_time}",
+            extra={"key": key, "value": value, "ttl": ttl, "expiry_time": expiry_time},
+        )
         self.map[key] = value
-        heapq.heappush(self.expiry_heap, (expiry_time, key))
+        if ttl > 0:  # if the ttl is not 0 it means save forever.
+            heapq.heappush(self.expiry_heap, (expiry_time, key))
 
     def get(self, key):
         self.cleanup()  # Remove expired items.
@@ -27,7 +34,7 @@ class ExpiringHashMap:
         while self.expiry_heap and self.expiry_heap[0][0] <= current_time:
             expiry_time, key = heapq.heappop(self.expiry_heap)
             if key in self.map and time.time() >= expiry_time:
-                print(f"Removing expired key: {key}")
+                log.debug(f"cleanup: {key}", extra={"key": key})
                 del self.map[key]
 
 

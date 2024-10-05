@@ -8,6 +8,8 @@ class command(Enum):
     GET = 2
     ECHO = 3
     PING = 4
+    CONFIG = 5
+    INFO = 6
     UNKNOWN = auto()
 
     @classmethod
@@ -21,6 +23,10 @@ class command(Enum):
             return cls.ECHO
         elif cmd == "ping":
             return cls.PING
+        elif cmd == "config":
+            return cls.CONFIG
+        elif cmd == "info":
+            return cls.INFO
         else:
             return cls.UNKNOWN
 
@@ -30,7 +36,7 @@ class Command:
     argc: int
     cmd: command
 
-    ex: int = 0
+    ex: int = -1
     px: int = 0
     nx: bool = False
     xx: bool = False
@@ -70,6 +76,10 @@ class Command:
             case command.ECHO:
                 self.value = self.argv[index]
             case command.PING:
+                pass
+            case command.CONFIG:
+                pass
+            case command.INFO:
                 pass
             case _:
                 raise Exception("Invalid command")
