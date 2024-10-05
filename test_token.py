@@ -98,5 +98,47 @@ class TestTokenize(unittest.TestCase):
         self.assertEqual(result, "PONG")
 
 
+# Benchmark to add 100000 key-value pairs
+def test_benchmark_set_100000(benchmark):
+    """Benchmark for adding 100000 key-value pairs."""
+    processor = Processor()
+
+    def add_100000():
+        for i in range(100000):
+            # Create a SET command for each key-value pair
+            cmd = Command(
+                tokenize(
+                    f"*5\r\n$3\r\nSET\r\n${len(f'key{i}')}\r\nkey{i}\r\n${len(f'value{i}')}\r\nvalue{i}\r\n$2\r\nEX\r\n$2\r\n10\r\n"
+                )
+            )
+            processor.process(cmd)
+
+    # Benchmark the function that adds 100000 key-value pairs
+    benchmark(add_100000)
+
+
+# # Benchmark to retrieve 100 different keys
+# def test_benchmark_get_100(benchmark):
+#     """Benchmark for retrieving 100 keys."""
+#     processor = Processor()
+#
+#     # First, insert the 100 keys so that we can retrieve them
+#     for i in range(100):
+#         cmd = Command(
+#             tokenize(
+#                 f"*5\r\n$3\r\nSET\r\n$3\r\nkey{i}\r\n$5\r\nvalue{i}\r\n$2\r\nEX\r\n$2\r\n10\r\n"
+#             )
+#         )
+#         processor.process(cmd)
+#
+#     def get_100():
+#         for i in range(100):
+#             cmd = Command(tokenize(f"*2\r\n$3\r\nGET\r\n$3\r\nkey{i}\r\n"))
+#             processor.process(cmd)
+#
+#     # Benchmark the function that retrieves 100 keys
+#     benchmark(get_100)
+
+
 if __name__ == "__main__":
     unittest.main()
