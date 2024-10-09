@@ -98,23 +98,53 @@ class TestTokenize(unittest.TestCase):
         self.assertEqual(result, "PONG")
 
 
-# Benchmark to add 100000 key-value pairs
 def test_benchmark_set_100000(benchmark):
     """Benchmark for adding 100000 key-value pairs."""
     processor = Processor()
 
-    def add_100000():
-        for i in range(100000):
-            # Create a SET command for each key-value pair
-            cmd = Command(
-                tokenize(
-                    f"*5\r\n$3\r\nSET\r\n${len(f'key{i}')}\r\nkey{i}\r\n${len(f'value{i}')}\r\nvalue{i}\r\n$2\r\nEX\r\n$2\r\n10\r\n"
-                )
+    # Pre-generate all commands outside of the function being benchmarked
+    commands = [
+        Command(
+            tokenize(
+                f"*5\r\n$3\r\nSET\r\n${len(f'key{i}')}\r\nkey{i}\r\n${len(f'value{i}')}\r\nvalue{i}\r\n$2\r\nEX\r\n$2\r\n10\r\n"
             )
+        )
+        for i in range(100000)
+    ]
+
+    def add_100000():
+        for cmd in commands:
             processor.process(cmd)
 
-    # Benchmark the function that adds 100000 key-value pairs
+    # Benchmark the function that processes 100000 pre-generated commands
     benchmark(add_100000)
+
+
+def test_benchmark_get_100000(benchmark):
+    """Benchmark for retrieving 100000 keys."""
+    processor = Processor()
+
+    # First, insert the 100000 keys so that we can retrieve them
+    for i in range(100000):
+        cmd = Command(
+            tokenize(
+                f"*5\r\n$3\r\nSET\r\n${len(f'key{i}')}\r\nkey{i}\r\n${len(f'value{i}')}\r\nvalue{i}\r\n$2\r\nEX\r\n$2\r\n10\r\n"
+            )
+        )
+        processor.process(cmd)
+
+    # Pre-generate GET commands outside of the benchmarked function
+    get_commands = [
+        Command(tokenize(f"*2\r\n$3\r\nGET\r\n${len(f'key{i}')}\r\nkey{i}\r\n"))
+        for i in range(100000)
+    ]
+
+    def get_100000():
+        for cmd in get_commands:
+            processor.process(cmd)
+
+    # Benchmark the function that retrieves 100000 pre-generated GET commands
+    benchmark(get_100000)
 
 
 # # Benchmark to retrieve 100 different keys
